@@ -12,6 +12,13 @@ const (
 	ProtocolVersion = "1.0.0"
 )
 
+// ChunkUploader is an interface that wraps the UploadChunck method. It includes
+// the GetConfig() method as well.
+type ChunkUploader interface {
+	GetConfig() *Config
+	UploadChunck(url string, body io.Reader, size int64, offset int64) (int64, error)
+}
+
 // Client represents the tus client.
 // You can use it in goroutines to create parallels uploads.
 type Client struct {
@@ -49,6 +56,11 @@ func NewClient(url string, config *Config) (*Client, error) {
 
 		client: config.HttpClient,
 	}, nil
+}
+
+// GetConfig returns the config currently assigned to the Client.
+func (c *Client) GetConfig() *Config {
+	return c.Config
 }
 
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
@@ -164,7 +176,8 @@ func (c *Client) CreateOrResumeUpload(u *Upload) (*Uploader, error) {
 	return nil, err
 }
 
-func (c *Client) uploadChunck(url string, body io.Reader, size int64, offset int64) (int64, error) {
+// UploadChunck will upload a single chunk to the specified URL.
+func (c *Client) UploadChunck(url string, body io.Reader, size int64, offset int64) (int64, error) {
 	var method string
 
 	if !c.Config.OverridePatchMethod {

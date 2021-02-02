@@ -5,7 +5,7 @@ import (
 )
 
 type Uploader struct {
-	client     *Client
+	Client     ChunkUploader
 	url        string
 	upload     *Upload
 	offset     int64
@@ -55,7 +55,7 @@ func (u *Uploader) Upload() error {
 
 // UploadChunck uploads a single chunck.
 func (u *Uploader) UploadChunck() error {
-	data := make([]byte, u.client.Config.ChunkSize)
+	data := make([]byte, u.Client.GetConfig().ChunkSize)
 
 	_, err := u.upload.stream.Seek(u.offset, 0)
 
@@ -71,7 +71,7 @@ func (u *Uploader) UploadChunck() error {
 
 	body := bytes.NewBuffer(data[:size])
 
-	newOffset, err := u.client.uploadChunck(u.url, body, int64(size), u.offset)
+	newOffset, err := u.Client.UploadChunck(u.url, body, int64(size), u.offset)
 
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (u *Uploader) broadcastProgress() {
 }
 
 // NewUploader creates a new Uploader.
-func NewUploader(client *Client, url string, upload *Upload, offset int64) *Uploader {
+func NewUploader(client ChunkUploader, url string, upload *Upload, offset int64) *Uploader {
 	notifyChan := make(chan bool)
 
 	uploader := &Uploader{
